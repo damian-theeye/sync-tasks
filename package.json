@@ -15,6 +15,7 @@
     "passport": "~0.4.1",
     "passport-http-bearer": "~1.0.1",
     "redis": "~3.0.2",
+    "redis-commander": "~0.7.0",
     "socket.io": "~2.3.0",
     "socket.io-client": "~2.3.0",
     "socket.io-redis": "~5.2.0"

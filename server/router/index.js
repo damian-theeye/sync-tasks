@@ -63,7 +63,7 @@ class Router {
             //next(null, false)
           } else {
             req.user = profile
-            //req.token = token
+            req.token = token
             next()
           }
         }, { session: false })(req, res, next)
@@ -83,16 +83,10 @@ class Router {
       },
       async (req, res, next) => {
         try {
-          const user = req.user
-          const customer = req.user.current_customer
-          const { taskId } = req.params
-
-          let response = await redirectRequest(req)
-
-          const job = response.body
-          const channel = `${customer.id}:job-crud:${job.id}`
-          let subscription = await subscribeQueue(channel)
-
+          let job, response
+          asyncHandleJobResult(req, res, { job })
+          response = await redirectRequest(req)
+          job = response.body
         } catch (err) {
           next(err)
         }
@@ -132,8 +126,7 @@ class Router {
         const redisClient = redis.createClient(app.config.redis)
 
         redisClient.on('message', (channel, message) => {
-          logger.log(channel, message)
-          //redisClient.unsubscribe(channel)
+          // do nothing
         })
 
         redisClient.on('subscribe', (channel, count) => {
@@ -149,10 +142,47 @@ class Router {
 
 module.exports = Router
 
+// fake response object
 class FakeResponse {
   constructor () {
   }
+
   setHeader (header) {
     this.header = header
-  } // fake response object
+  }
+
+  end (message) {
+    this.message = message
+  }
+}
+
+/**
+ * @param {IncommingRequest} req
+ * @param {IncommingResponse} res
+ * @param {Object}
+ */
+const asyncHandleJobResult = async (req, res, { job }) => {
+  const user = req.user
+  const customer = req.user.current_customer
+  const { taskId } = req.params
+  const channel = `${customer.id}:task-completed:${taskId}`
+
+  let subscription = await subscribeQueue(channel)
+  subscription.on('message', async (channel, message) => {
+    try {
+      logger.log(channel, message)
+      let payload = JSON.parse(message)
+
+      if (payload.job_id === job._id) {
+        subscription.unsubscribe(channel)
+        logger.log(payload)
+        // update job
+        job = await got(`${app.config.supervisor.url}/job/${job._id}?access_token=${req.token}`, {responseType: 'json'})
+        res.send(job)
+      }
+    } catch (err) {
+      logger.error(err)
+      res.status(500).json('Internal Server Error')
+    }
+  })
 }
