@@ -33,12 +33,19 @@ module.exports = (app) => {
     }
   )
 
-  const requestHandlerMiddleware = (req, res, next) => {
+  const requestHandlerMiddleware = async (req, res, next) => {
     try {
-      // use job object reference
-      let job = {}, response
+      const { user, params, token } = req 
+      const customer = user.current_customer
 
-      jobResultHandler(job, req)
+      const { taskId } = params
+      const channel = `${customer.id}:task-completed:${taskId}`
+
+      // use job object reference
+      const job = {}
+      const subscription = await subscribeQueue(channel)
+
+      jobResultHandler(subscription, job, customer, token)
         .then(payload => {
           next(null, payload)
         })
@@ -46,12 +53,12 @@ module.exports = (app) => {
           next(err)
         })
 
-
       redirectRequest(req)
         .then(response => {
           const { statusCode, body } = response
 
           if (statusCode !== 200) {
+            subscription.unsubscribe(channel) // stop listening
             return next( new ClientError(body.message, { statusCode }) )
           }
 
@@ -93,15 +100,8 @@ module.exports = (app) => {
     })
   }
 
-  const jobResultHandler = (job, context) => {
-    const { user, params, token } = context
-
-    const customer = user.current_customer
-    const { taskId } = params
-    const channel = `${customer.id}:task-completed:${taskId}`
-
+  const jobResultHandler = (subscription, job, customer, token) => {
     return new Promise( async (resolve, reject) => {
-      let subscription = await subscribeQueue(channel)
       subscription.on('message', async (channel, message) => {
         try {
           logger.log(channel, message)
