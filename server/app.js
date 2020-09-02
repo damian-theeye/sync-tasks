@@ -113,6 +113,8 @@ class App extends EventEmitter {
         logger.error(err.stack)
         res.status(500).json({ message: 'Internal Server Error' })
       }
+      res.sent = true
+      res.error = err
       return
     })
 
