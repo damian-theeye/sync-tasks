@@ -4,12 +4,12 @@
     "networkMode": "awsvpc",
     "containerDefinitions": [
         {
-            "name": "next-uk-post-codes",
+            "name": "theeye-sync-tasks",
             "image": "174383185918.dkr.ecr.us-east-1.amazonaws.com/theeye-sync-tasks:latest",
             "portMappings": [
                 {
-                    "containerPort": 3000,
-                    "hostPort": 3000,
+                    "containerPort": 6081,
+                    "hostPort": 6081,
                     "protocol": "tcp"
                 }
             ],
