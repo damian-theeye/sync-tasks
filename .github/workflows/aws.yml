@@ -76,6 +76,6 @@ jobs:
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: theeye-sync-tasks-service
-        cluster: theeye-sync-tasks
+        service: theeye-api-sync-service
+        cluster: theeye-api-sync
         wait-for-service-stability: true
