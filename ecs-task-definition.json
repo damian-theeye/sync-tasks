@@ -5,7 +5,7 @@
     "containerDefinitions": [
         {
             "name": "theeye-sync-tasks",
-            "image": "174383185918.dkr.ecr.us-east-1.amazonaws.com/sync-tasks:latest",
+            "image": "174383185918.dkr.ecr.us-east-1.amazonaws.com/theeye-sync-tasks:latest",
             "portMappings": [
                 {
                     "containerPort": 6081,
