@@ -10,4 +10,4 @@ RUN cd ${destDir}; npm install
 
 EXPOSE 6081
 
-CMD ["npm","run","start"]
+CMD ["start.sh"]
