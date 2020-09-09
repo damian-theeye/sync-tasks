@@ -7,7 +7,7 @@ WORKDIR ${destDir}
 COPY . ${destDir}
 # install
 RUN cd ${destDir}; npm install
-
+RUN chmod 777 start.sh
 EXPOSE 6081
 
-CMD ["start.sh"]
+CMD "/src/theeye/api/start.sh"
