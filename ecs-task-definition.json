@@ -1,34 +1,33 @@
 {
-    "family": "theeye-api-sync",
-    "taskRoleArn": "arn:aws:iam::174383185918:role/ecsTaskRole",
-    "executionRoleArn": "arn:aws:iam::174383185918:role/ecsTaskExecutionRole",
-    "networkMode": "awsvpc",
-    "containerDefinitions": [
+  "family": "theeye-api-sync",
+  "taskRoleArn": "arn:aws:iam::174383185918:role/ecsTaskRole",
+  "executionRoleArn": "arn:aws:iam::174383185918:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "containerDefinitions": [
+    {
+      "name": "theeye-sync-tasks",
+      "image": "174383185918.dkr.ecr.us-east-1.amazonaws.com/theeye-sync-tasks:latest",
+      "portMappings": [
         {
-            "name": "theeye-sync-tasks",
-            "image": "174383185918.dkr.ecr.us-east-1.amazonaws.com/theeye-sync-tasks:latest",
-            "portMappings": [
-                {
-                    "containerPort": 6081,
-                    "hostPort": 6081,
-                    "protocol": "tcp"
-                }
-            ],
-            "logConfiguration": {
-                    "logDriver": "awslogs",
-                    "options": {
-                          "awslogs-group": "theeyeSyncTasks",
-                          "awslogs-region": "us-east-1",
-                          "awslogs-stream-prefix": "theeyesynctasks"
-                    }
-             },
-
-            "essential": true
+          "containerPort": 6081,
+          "hostPort": 6081,
+          "protocol": "tcp"
         }
-    ],
-    "requiresCompatibilities": [
-        "FARGATE"
-    ],
-    "cpu": "512",
-    "memory": "1024"
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "theeyeSyncTasks",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "theeyesynctasks"
+        }
+      },
+      "essential": true
+    }
+  ],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ],
+  "cpu": "512",
+  "memory": "1024"
 }
