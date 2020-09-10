@@ -1,5 +1,6 @@
 {
     "family": "theeye-api-sync",
+    "taskRoleArn": "arn:aws:iam::174383185918:role/ecsTaskRole",
     "executionRoleArn": "arn:aws:iam::174383185918:role/ecsTaskExecutionRole",
     "networkMode": "awsvpc",
     "containerDefinitions": [
