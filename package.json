@@ -12,6 +12,7 @@
     "fast-proxy": "1.7.0",
     "got": "^11.3.0",
     "jsonwebtoken": "~8.5.1",
+    "nodemon": "~2.0.4",
     "passport": "~0.4.1",
     "passport-http-bearer": "~1.0.1",
     "redis": "~3.0.2",

@@ -37,36 +37,19 @@ module.exports = (app) => {
     try {
       const { user, params, token } = req 
       const customer = user.current_customer
-
       const { taskId } = params
-      const channel = `${customer.id}:task-completed:${taskId}`
 
-      // use job object reference
-      const job = {}
+      const { statusCode, body } = await redirectRequest(req)
+
+      if (statusCode !== 200) {
+        return next( new ClientError(body.message, { statusCode }) )
+      }
+
+      const job = body
+      const channel = `${customer.id}:job-finished:${job.id}`
       const subscription = await subscribeQueue(channel)
-
-      jobResultHandler(subscription, job, customer, token)
-        .then(payload => {
-          next(null, payload)
-        })
-        .catch(err => {
-          next(err)
-        })
-
-      redirectRequest(req)
-        .then(response => {
-          const { statusCode, body } = response
-
-          if (statusCode !== 200) {
-            subscription.unsubscribe(channel) // stop listening
-            return next( new ClientError(body.message, { statusCode }) )
-          }
-
-          Object.assign(job, response.body)
-        })
-        .catch(err => {
-          next(err)
-        })
+      const payload = await jobResultHandler(subscription, job, customer, token)
+      next(null, payload)
     } catch (err) {
       next(err)
     }
@@ -104,22 +87,26 @@ module.exports = (app) => {
     return new Promise( async (resolve, reject) => {
       subscription.on('message', async (channel, message) => {
         try {
+          // stop listening in this channel
+          subscription.unsubscribe(channel)
+          logger.log(`stopped listening ${channel} messages`)
+
           logger.log(channel, message)
           let payload = JSON.parse(message)
 
-          if (payload.data && payload.data.job_id) {
-            if (payload.data.job_id === job.id) {
-              subscription.unsubscribe(channel)
-              // get updated job
-              const api = app.config.supervisor.url
-              const url = `${api}/${customer.name}/job/${job.id}?access_token=${token}`
-              let response = await got(url, { responseType: 'json' })
-              resolve(response.body)
-            }
-          } else {
-            logger.error('Invalid Message Format')
-            reject(new ServerError())
-          }
+          const api = app.config.supervisor.url
+          const url = `${api}/${customer.name}/job/${job.id}?access_token=${token}`
+          let response = await got(url, { responseType: 'json' })
+          resolve(response.body)
+
+          //if (payload.data && payload.data.job_id) {
+          //  if (payload.data.job_id === job.id) {
+          //    // get updated job
+          //  }
+          //} else {
+          //  logger.error('Invalid Message Format')
+          //  reject(new ServerError())
+          //}
         } catch (err) {
           reject(err)
         }
@@ -128,6 +115,7 @@ module.exports = (app) => {
   }
 
   const subscribeQueue = (channel) => {
+    logger.log(`waiting ${channel}`)
     return new Promise( (resolve, reject) => {
       const redisClient = redis.createClient(app.config.redis)
 
@@ -136,7 +124,7 @@ module.exports = (app) => {
       })
 
       redisClient.on('subscribe', (channel, count) => {
-        logger.log(`subscription #${count} to "${channel}"`)
+        logger.log(`subscribed to "${channel}"`)
         resolve(redisClient)
       })
 
