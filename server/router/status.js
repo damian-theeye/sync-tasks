@@ -31,8 +31,10 @@ const getVersion = () => {
   return new Promise( (resolve, reject) => {
     const cmd = 'cd ' + process.cwd() + ' && git describe'
     exec(cmd, {}, (err, stdout, stderr) => {
-      if (err) reject(err)
-      resolve(stdout)
+      if (err) {
+        logger.error(err)
+      }
+      resolve(stdout || '')
     })
   })
 }
