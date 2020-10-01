@@ -6,8 +6,12 @@ const fastProxy = require('fast-proxy')
 const logger = require('../logger')('router:task')
 const { ClientError, ServerError } = require('../errors')
 
+
 module.exports = (app) => {
   const router = express.Router()
+
+  const coreApi = app.config.supervisor.url
+  const SYNCING_LIFECYCLE = 'syncing'
 
   const { proxy, close } = fastProxy({})
 
@@ -39,15 +43,44 @@ module.exports = (app) => {
       const customer = user.current_customer
       const { taskId } = params
 
+      // ************************
+      //
+      // force syncing lifecycle
+      //
+      // ************************
+      req.body.lifecycle = SYNCING_LIFECYCLE
       const { statusCode, body } = await redirectRequest(req)
-
       if (statusCode !== 200) {
         return next( new ClientError(body.message, { statusCode }) )
       }
 
+      // ************************
+      //
+      // subscribe to job messages
+      //
+      // ************************
       const job = body
       const channel = `${customer.id}:job-finished:${job.id}`
       const subscription = await subscribeQueue(channel)
+
+      // ************************
+      //
+      //  send execute order
+      //
+      // ************************
+      const url = `${coreApi}/job/${job.id}/synced?access_token=${token}`
+      const response = await got.put(url)
+      if (response.statusCode !== 200) {
+        // on error unsubscribe
+        subscription.unsubscribe(channel)
+        return next( new ServerError(response.body.message, { statusCode }) )
+      }
+
+      // ************************
+      //
+      //  wait for job execution finished message
+      //
+      // ************************
       const payload = await jobResultHandler(subscription, job, customer, token)
       next(null, payload)
     } catch (err) {
@@ -94,19 +127,9 @@ module.exports = (app) => {
           logger.log(channel, message)
           let payload = JSON.parse(message)
 
-          const api = app.config.supervisor.url
-          const url = `${api}/${customer.name}/job/${job.id}?access_token=${token}`
+          const url = `${coreApi}/${customer.name}/job/${job.id}?access_token=${token}`
           let response = await got(url, { responseType: 'json' })
           resolve(response.body)
-
-          //if (payload.data && payload.data.job_id) {
-          //  if (payload.data.job_id === job.id) {
-          //    // get updated job
-          //  }
-          //} else {
-          //  logger.error('Invalid Message Format')
-          //  reject(new ServerError())
-          //}
         } catch (err) {
           reject(err)
         }
