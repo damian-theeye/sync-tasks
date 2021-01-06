@@ -15,7 +15,7 @@ class Router {
       new passportBearer(async (token, done) => {
         try {
           /** verify incomming json web token validity **/
-          const decoded = jwt.verify(token, app.config.app.secret, {})
+          //const decoded = jwt.verify(token, app.config.app.secret, {})
           /** fetch token profile **/
           const response = await got(`${app.config.gateway.url}/api/session/profile?access_token=${token}`, {responseType: 'json'})
           done(null, response.body, token)
