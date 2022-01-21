@@ -2,6 +2,7 @@ const express = require('express')
 const got = require('got')
 const redis = require('redis')
 const fastProxy = require('fast-proxy')
+const zlib = require('zlib')
 
 const logger = require('../logger')('router:task')
 const { ClientError, ServerError } = require('../errors')
@@ -51,17 +52,35 @@ module.exports = (app) => {
       req.body.lifecycle = SYNCING_LIFECYCLE
       const { statusCode, body } = await redirectRequest(req)
       if (statusCode !== 200) {
-        return next( new ClientError(body.message, { statusCode }) )
+        return next( new ClientError('Invalid Request', { statusCode, value: body }) )
       }
 
       // ************************
       //
-      // subscribe to job messages
+      //  subscribe and wait for job execution finished message
       //
       // ************************
       const job = body
       const channel = `${customer.id}:job-finished:${job.id}`
-      const subscription = await subscribeQueue(channel)
+      const client = await redisSubscribe({
+        channel,
+        onMessage: async (message) => {
+          try {
+            // stop listening in this channel
+            client.unsubscribe(channel)
+            logger.log(`stopped listening ${channel} messages`)
+
+            //const payload = JSON.parse(message)
+            logger.log(message)
+
+            const url = `${coreApi}/${customer.name}/job/${job.id}?access_token=${token}`
+            let response = await got(url, { responseType: 'json' })
+            next(null, response.body)
+          } catch (err) {
+            next(err)
+          }
+        }
+      })
 
       // ************************
       //
@@ -72,17 +91,9 @@ module.exports = (app) => {
       const response = await got.put(url)
       if (response.statusCode !== 200) {
         // on error unsubscribe
-        subscription.unsubscribe(channel)
+        client.unsubscribe(channel)
         return next( new ServerError(response.body.message, { statusCode }) )
       }
-
-      // ************************
-      //
-      //  wait for job execution finished message
-      //
-      // ************************
-      const payload = await jobResultHandler(subscription, job, customer, token)
-      next(null, payload)
     } catch (err) {
       next(err)
     }
@@ -98,10 +109,24 @@ module.exports = (app) => {
          * @param {IncomingMessage} apiRes supervisor api response
          */
         onResponse: (origReq, fakeRes, apiRes) => {
-          let str = ''
-          apiRes.on('data', d  => { if (d) { str += d } })
+
+          const data = []
+          apiRes.on('data', (chunck) => { data.push(chunck) })
           apiRes.on('end' , () => {
             try {
+              const buffer = Buffer.concat(data)
+
+              let str
+              if (fakeRes.headers['content-encoding'] == 'gzip') {
+                const dezipped = zlib.gunzipSync(buffer)
+                str = dezipped.toString()
+              } else {
+                str = buffer.toString()
+              }
+
+              console.log(str)
+
+
               apiRes.rawBody = str
               apiRes.body = JSON.parse(str)
               resolve(apiRes)
@@ -110,49 +135,25 @@ module.exports = (app) => {
               reject(err)
             }
           })
-          //res.status(200).json({ })
         }
       })
     })
   }
 
-  const jobResultHandler = (subscription, job, customer, token) => {
-    return new Promise( async (resolve, reject) => {
-      subscription.on('message', async (channel, message) => {
-        try {
-          // stop listening in this channel
-          subscription.unsubscribe(channel)
-          logger.log(`stopped listening ${channel} messages`)
-
-          logger.log(channel, message)
-          let payload = JSON.parse(message)
-
-          const url = `${coreApi}/${customer.name}/job/${job.id}?access_token=${token}`
-          let response = await got(url, { responseType: 'json' })
-          resolve(response.body)
-        } catch (err) {
-          reject(err)
-        }
-      })
-    })
-  }
-
-  const subscribeQueue = (channel) => {
+  async function redisSubscribe (options) {
+    const { channel, onMessage } = options
     logger.log(`waiting ${channel}`)
-    return new Promise( (resolve, reject) => {
-      const redisClient = redis.createClient(app.config.redis)
 
-      redisClient.on('message', (channel, message) => {
-        // do nothing
-      })
+    const redisClient = redis.createClient(app.config.redis)
+    await redisClient.connect()
 
-      redisClient.on('subscribe', (channel, count) => {
-        logger.log(`subscribed to "${channel}"`)
-        resolve(redisClient)
-      })
-
-      redisClient.subscribe(channel)
+    redisClient.on('error', (err) => {
+      console.log('Redis Client Error', err)
     })
+
+    await redisClient.subscribe(channel, onMessage)
+
+    return redisClient
   }
 
   return router
@@ -161,10 +162,11 @@ module.exports = (app) => {
 // fake response object
 class FakeResponse {
   constructor () {
+    this.headers = []
   }
 
-  setHeader (header) {
-    this.header = header
+  setHeader (header, value) {
+    this.headers[header] = value
   }
 
   end (message) {

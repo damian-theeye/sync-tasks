@@ -96,6 +96,7 @@ class ClientError extends ExtendedError {
   constructor (message, options) {
     super(message || 'Invalid Request')
     options||(options={})
+    Object.assign(this, options)
     this.name = this.constructor.name
     this.code = options.code || ''
     this.status = options.statusCode || 400
@@ -106,6 +107,7 @@ class ServerError extends ExtendedError {
   constructor (message, options) {
     super(message || 'Internal Server Error')
     options||(options={})
+    Object.assign(this, options)
     this.name = this.constructor.name
     this.code = options.code || ''
     this.status = options.statusCode || 500
