@@ -12,7 +12,7 @@ module.exports = {
     url: 'http://127.0.0.1:60080'
   },
   redis: {
-    host: '127.0.0.1',
-    port: 6379
+    //url: 'redis[s]://[[username][:password]@][host][:port][/db-number]'
+    url: 'redis://127.0.0.1:6379/0'
   }
 }
