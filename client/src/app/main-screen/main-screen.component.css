@@ -1,0 +1,42 @@
+.processButtonTable {
+    width:100%;
+
+}
+
+.title {
+    margin-top:25px; margin-left:50px; margin-bottom: 10%;
+}
+
+.processButtonTable td {
+    text-align: right;
+}
+
+.content {
+    width:40%;margin-left: 30%;margin-right: 30%;margin-top:20px;
+}
+
+  /***LOADSCREEN**/
+
+  .my-overlay {
+    left: 0 !important;
+    top: 0 !important;
+    z-index: 10000 !important;
+    width: 100% !important;
+    height: 100% !important;
+    position: fixed !important;
+    background-color: rgba(0,0,0,0.9) !important;
+    cursor: pointer !important;
+    visibility: visible !important;
+    transition: visibility 0s, opacity 0.4s linear !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: wait !important;
+}
+.my-overlay i.fa.fa-spinner.fa-spin, .spinner-big {
+    font-size: 100px !important;
+}
+
+:host ::ng-deep .mat-progress-spinner circle, .mat-spinner circle  {
+    stroke: #3371AB!important;
+    }
