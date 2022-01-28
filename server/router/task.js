@@ -35,21 +35,25 @@ module.exports = (app) => {
     const result = {}
 
     if (options.hasOwnProperty('result')) {
-      result.data = job.data
-    } else if (options.hasOwnProperty('output')) {
-      result.data = job.output
+      result.data = job.result
+    } else if (options.hasOwnProperty('job')) {
+      result.data = job
     } else {
-      result.data = job // full job ejecution result
-    }
-
-    if (Array.isArray(job.output)) {
-      try {
-        const output = job.output
-        const respData = JSON.parse(output[0]) // first index
-        result.data = respData
-        result.statusCode = respData?.statusCode
-      } catch (jsonErr) {
-        logger.log('output cannot be parsed')
+      const output = job.output
+      if (options.hasOwnProperty('parse')) {
+        const index = (options.parse || 0)
+        if (Array.isArray(output)) {
+          try {
+            const respData = JSON.parse(output[index]) // first index
+            result.data = respData
+            result.statusCode = respData?.statusCode
+          } catch (jsonErr) {
+            logger.log('output cannot be parsed')
+            result.data = output
+          }
+        }
+      } else {
+        result.data = output
       }
     }
 
