@@ -36,7 +36,7 @@ module.exports = (app) => {
 
     if (options.hasOwnProperty('result')) {
       result.data = job.result
-    } else if (options.hasOwnProperty('job')) {
+    } else if (options.hasOwnProperty('full')) {
       result.data = job
     } else {
       const output = job.output
