@@ -1,6 +1,5 @@
 const express = require('express')
 const got = require('got')
-const redis = require('redis')
 const fastProxy = require('fast-proxy')
 const zlib = require('zlib')
 
@@ -25,20 +24,68 @@ module.exports = (app) => {
         if (err) { return next(err) }
         // prepare response
 
-        res.status(200)
-
-        if (query.hasOwnProperty('result')) {
-          res.json(payload.result)
-        } else if (query.hasOwnProperty('output')) {
-          res.json(payload.output)
-        } else {
-          res.json(payload)
-        }
+        const result = prepareJobResponse(payload, query)
+        res.status(result.statusCode || 200)
+        res.json(result.data)
       })
     }
   )
 
+  const prepareJobResponse = (job, options) => {
+    const result = {}
+
+    if (options.hasOwnProperty('result')) {
+      result.data = job.data
+    } else if (options.hasOwnProperty('output')) {
+      result.data = job.output
+    } else {
+      result.data = job // full job ejecution result
+    }
+
+    if (Array.isArray(job.output)) {
+      try {
+        const output = job.output
+        const respData = JSON.parse(output[0]) // first index
+        result.data = respData
+        result.statusCode = respData?.statusCode
+      } catch (jsonErr) {
+        logger.log('output cannot be parsed')
+      }
+    }
+
+    if (!result.statusCode) {
+      // default. the job was executed
+      if (job.state !== 'success') {
+        result.statusCode = 500
+      } else {
+        result.statusCode = 200
+      }
+    }
+
+    return result
+  }
+
+  //router.post('/task/:taskId/job', (req, res, next) => {
+  //  const { query } = req
+  //  requestHandlerMiddleware(req, res, (err, payload) => {
+  //    // handled by error middleware
+  //    if (err) { return next(err) }
+  //    // prepare response
+
+  //    res.status(200)
+
+  //    if (query.hasOwnProperty('result')) {
+  //      res.json(payload.result)
+  //    } else if (query.hasOwnProperty('output')) {
+  //      res.json(payload.output)
+  //    } else {
+  //      res.json(payload)
+  //    }
+  //  })
+  //})
+
   const requestHandlerMiddleware = async (req, res, next) => {
+    let channel
     try {
       const { user, params, token } = req 
       const customer = user.current_customer
@@ -61,26 +108,43 @@ module.exports = (app) => {
       //
       // ************************
       const job = body
-      const channel = `${customer.id}:job-finished:${job.id}`
-      const client = await redisSubscribe({
-        channel,
-        onMessage: async (message) => {
-          try {
-            // stop listening in this channel
-            client.unsubscribe(channel)
-            logger.log(`stopped listening ${channel} messages`)
+      channel = `${customer.id}:job-finished:${job.id}`
+      app.service.redis.subscribe(channel, async (message) => {
+        try {
+          // stop listening in this channel
+          app.service.redis.unsubscribe(channel)
+          logger.log(`stopped listening ${channel} messages`)
 
-            //const payload = JSON.parse(message)
-            logger.log(message)
+          //const payload = JSON.parse(message)
+          logger.log(message)
 
-            const url = `${coreApi}/${customer.name}/job/${job.id}?access_token=${token}`
-            let response = await got(url, { responseType: 'json' })
-            next(null, response.body)
-          } catch (err) {
-            next(err)
-          }
+          const url = `${coreApi}/${customer.name}/job/${job.id}?access_token=${token}`
+          let response = await got(url, { responseType: 'json' })
+          next(null, response.body)
+        } catch (err) {
+          next(err)
         }
       })
+
+      //const client = await redisSubscribe({
+      //  channel,
+      //  onMessage: async (message) => {
+      //    try {
+      //      // stop listening in this channel
+      //      client.unsubscribe(channel)
+      //      logger.log(`stopped listening ${channel} messages`)
+
+      //      //const payload = JSON.parse(message)
+      //      logger.log(message)
+
+      //      const url = `${coreApi}/${customer.name}/job/${job.id}?access_token=${token}`
+      //      let response = await got(url, { responseType: 'json' })
+      //      next(null, response.body)
+      //    } catch (err) {
+      //      next(err)
+      //    }
+      //  }
+      //})
 
       // ************************
       //
@@ -88,13 +152,23 @@ module.exports = (app) => {
       //
       // ************************
       const url = `${coreApi}/job/${job.id}/synced?access_token=${token}`
-      const response = await got.put(url)
-      if (response.statusCode !== 200) {
-        // on error unsubscribe
-        client.unsubscribe(channel)
-        return next( new ServerError(response.body.message, { statusCode }) )
-      }
+      await got.put(url)
     } catch (err) {
+      // on error unsubscribe
+      app.service.redis.unsubscribe(channel)
+
+      const response = err.response
+      const statusCode = response?.statusCode
+
+      if (!statusCode || statusCode >= 500) {
+        return next( new ServerError('Internal Server Error', { statusCode }) )
+      }
+
+      if (statusCode >= 400) {
+        const body = response.body
+        return next( new ClientError(body.message, { statusCode }) )
+      } 
+
       next(err)
     }
   }
@@ -140,21 +214,21 @@ module.exports = (app) => {
     })
   }
 
-  async function redisSubscribe (options) {
-    const { channel, onMessage } = options
-    logger.log(`waiting ${channel}`)
+  //async function redisSubscribe (options) {
+  //  const { channel, onMessage } = options
+  //  logger.log(`waiting ${channel}`)
 
-    const redisClient = redis.createClient(app.config.redis)
-    await redisClient.connect()
+  //  const redisClient = redis.createClient(app.config.redis)
+  //  await redisClient.connect()
 
-    redisClient.on('error', (err) => {
-      console.log('Redis Client Error', err)
-    })
+  //  redisClient.on('error', (err) => {
+  //    console.log('Redis Client Error', err)
+  //  })
 
-    await redisClient.subscribe(channel, onMessage)
+  //  await redisClient.subscribe(channel, onMessage)
 
-    return redisClient
-  }
+  //  return redisClient
+  //}
 
   return router
 }

@@ -2,6 +2,7 @@ const express = require('express')
 const path = require('path')
 const http = require('http')
 const https = require('https')
+const redis = require('redis')
 const passport = require('passport')
 const Router = require('./router')
 const logger = require('./logger')('app')
@@ -12,7 +13,7 @@ class App extends EventEmitter {
   async configure (config) {
     this.config = config
 
-    this.setupServices()
+    await this.setupServices(config)
 
     this.setupApiMiddlewares()
 
@@ -32,9 +33,19 @@ class App extends EventEmitter {
     new Router(this)
   }
 
-  setupServices () {
+  async setupServices (config) {
+
+    const redisClient = redis.createClient(config.redis)
+    await redisClient.connect()
+
+    redisClient.on('error', (err) => {
+      console.log('Redis Client Error', err)
+    })
+
     // services
-    this.service = {}
+    this.service = {
+      redis: redisClient
+    }
   }
 
   setupApiMiddlewares () {
