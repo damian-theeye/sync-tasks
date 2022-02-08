@@ -28,24 +28,24 @@ export class SessionService {
 				sessionObservable.next(this.sessionCookie)
 				previousStream = this.sessionCookie
 			}
-		}, 500)
+		}, 1000)
 	});
 	
 	constructor(private requestService:RequestService) {
 		this.refreshLogin()
 	}
 
-	getLoginData = async (email:string, password:string, customer:string | null):Promise<any> => {
+	getLoginData = (email:string, password:string, customer:string | null):Promise<any> => {
 		return new Promise((resolve, reject) => {
 			// Se le puede pasar this.customer en caso de que sea customer fijo por config
 			this.requestService.login(email,password,customer)
 				.subscribe({
 					next: data => {
-						console.log('getLoginData: Fetched res data')
+						// console.log('getLoginData: Fetched res data')
 						resolve(data)
 					},
 					error: error => {
-						console.error('getLoginData: Error requesting data!')
+						// console.error('getLoginData: Error requesting data!')
 						this.logout()
 						reject(error)
 					}
@@ -54,25 +54,23 @@ export class SessionService {
 		})
 	}
 
-	login = async (email: string, password: string, customer:string | null):Promise<void> => {
-		return new Promise(async (resolve, reject) => {
+	login = (email: string, password: string, customer:string | null):Promise<void> => {
+		return new Promise((resolve, reject) => {
 			if (email && password) {
-				let credentialsData
-				try {
-					credentialsData = await this.getLoginData(email, password, customer || localStorage.getItem('customer'))
-					this.sessionCookie = {
-						email: email,
-						token: credentialsData.access_token,
-						credential: credentialsData.credential,
-						customer: customer
-					}
-		
-					resolve(this.store())
-				} catch (e) {
-					reject(e)
-				}
+					this.getLoginData(email, password, customer || localStorage.getItem('customer'))
+					.then((credentialsData) => {
+						this.sessionCookie = {
+							email: email,
+							token: credentialsData.access_token,
+							credential: credentialsData.credential,
+							customer: customer
+						}
+						resolve(this.store())
+					}).catch(e=> {
+						reject(e)
+					})
 			} else {
-				reject({message:'Username or password is blank.', status:50})
+				reject({message:'Username or password is blank.', status:500})
 			}
 		})
 		

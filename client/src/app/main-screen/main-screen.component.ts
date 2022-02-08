@@ -37,7 +37,7 @@ export class MainScreenComponent implements OnInit {
 
 	constructor(private sessionService:SessionService, private router:Router, private requestService: RequestService) { }
 
-	getTasks = async ():Promise<any> => {
+	getTasks = ():Promise<any> => {
 		return new Promise((resolve, reject) => {
 			this.requestService.getTaskList(this.userToken, this.userCustomer)
 				.subscribe({
@@ -54,7 +54,7 @@ export class MainScreenComponent implements OnInit {
 		})
 	}
 
-	getTaskResult = async ():Promise<any> => {
+	getTaskResult = ():Promise<any> => {
 		return new Promise((resolve, reject) => {
 			this.requestService.getTaskResult(this.userToken, this.jobId, this.userCustomer)
 				.subscribe({
@@ -71,7 +71,7 @@ export class MainScreenComponent implements OnInit {
 		})
 	}
 
-	getCredentialData = async ():Promise<any> => {
+	getCredentialData = ():Promise<any> => {
 		return new Promise((resolve, reject) => {
 			this.requestService.getCredentialData(this.userToken)
 				.subscribe({
@@ -88,22 +88,23 @@ export class MainScreenComponent implements OnInit {
 		})
 	}
 
-	taskResultButton = async():Promise<any> => {
-		try {
-			const response = await this.getTaskResult()
-			this.taskResultRaw = response
-			this.setResultVars(response)
-			this.prettifyResult(response)
-			this.showOverlay = false
-		} catch(e:any) {
-			this.taskResultRaw = e
-			this.setResultVars(e.error)
-			this.prettifyResult(e)
-			this.showOverlay = false
-		}
+	taskResultButton = ():void => {
+		this.getTaskResult()
+			.then((response) => {
+				this.taskResultRaw = response
+				this.setResultVars(response)
+				this.prettifyResult(response)
+				this.showOverlay = false
+			})
+			.catch((e:any) => {
+				this.taskResultRaw = e
+				this.setResultVars(e.error)
+				this.prettifyResult(e)
+				this.showOverlay = false
+			})
 	}
 
-	postTask = async ():Promise<any> => {
+	postTask = ():Promise<any> => {
 
 		this.inputArgumentsArray = this.inputArguments.split(',')
 		return new Promise((resolve, reject) => {
@@ -126,10 +127,10 @@ export class MainScreenComponent implements OnInit {
 	isJsonString = (str:string):boolean=> {
 		try {
 			JSON.parse(str)
+			return true
 		} catch (e) {
 			return false
 		}
-		return true
 	}
 
 	setResultVars = (raw:any):void=> {
@@ -146,7 +147,7 @@ export class MainScreenComponent implements OnInit {
 		}
 	}
 
-	sendReq = async ():Promise<void> => {
+	sendReq = ():void => {
 		this.jobId =''
 		this.showOverlay = true
 		this.showPretty=false
@@ -154,20 +155,21 @@ export class MainScreenComponent implements OnInit {
 		this.taskResult = []
 		this.taskResultRaw = ''
 
-		try {
-			const response = await this.postTask()
-			const env = (JSON.parse(response.env.THEEYE_JOB))
-			this.jobId = env.id
-			this.taskResultRaw = response
-			this.setResultVars(response)
-			this.prettifyResult(response)
-			this.showOverlay = false
-		} catch(e:any) {
-			this.taskResultRaw = e
-			this.setResultVars(e.error)
-			this.prettifyResult(e)
-			this.showOverlay = false
-		}		
+		this.postTask()
+			.then((response:any) => {
+				const env = (JSON.parse(response.env.THEEYE_JOB))
+				this.jobId = env.id
+				this.taskResultRaw = response
+				this.setResultVars(response)
+				this.prettifyResult(response)
+				this.showOverlay = false
+			})
+			.catch((e:any) => {
+				this.taskResultRaw = e
+				this.setResultVars(e.error)
+				this.prettifyResult(e)
+				this.showOverlay = false
+			})
 	}
 
 	onSelectTask = ():void => {
@@ -203,14 +205,17 @@ export class MainScreenComponent implements OnInit {
 						this.userCustomer = data.customer
 					} else {
 						console.log('Fetching default customer')
-						const credentialData = await this.getCredentialData()
-						this.userCustomer = credentialData.current_customer.name
+						this.getCredentialData()
+							.then((credentialData:any) => {
+								this.userCustomer = credentialData.current_customer.name
+							})			
 					}
 				}
 			}
 		)
 
-		const tasks = await this.getTasks()
-		this.setSelectValues(tasks)
+		this.getTasks().then((tasks:any) => {
+			this.setSelectValues(tasks)
+		})
 	}
 }

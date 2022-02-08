@@ -1,6 +1,7 @@
 import { Component, OnInit} from '@angular/core';
 import { Router } from '@angular/router';
 import { SessionService } from '../api/session/session.service';
+import { TheeyeCredential } from '../common/global-constants';
 
 @Component({
 	selector: 'login-screen',
@@ -16,36 +17,33 @@ export class LoginScreenComponent implements OnInit {
 
 	constructor(private router: Router, private sessionService: SessionService) { }
 
-	login = async () => {
+	login = () => {
 		console.log("Iniciando sesión...")
 		this.errorDiv = ''
-		try {
-			await this.sessionService.login(this.email, this.password, this.customer)
-		} catch(e:any) {
-			if(e.status === 50) {
-				this.errorDiv=e.message
-			}
-			if(e.status === 403) {
-				this.errorDiv = 'Credentials lack privileges for selected customer.'
-				console.log('Forbidden')
-			}
+		this.sessionService.login(this.email, this.password, this.customer)
+			.catch((e:any)=> {
+				if(e.status === 500) {
+					this.errorDiv=e.message
+				}
+				if(e.status === 403) {
+					this.errorDiv = 'Credentials lack privileges for selected customer.'
+					console.log('Forbidden')
+				}
 
-			if(e.status === 401) {
-				this.errorDiv = 'Invalid authentication credentials.'
-				console.log('Unauthorized')
-			}
+				if(e.status === 401) {
+					this.errorDiv = 'Invalid authentication credentials.'
+					console.log('Unauthorized')
+				}
 
-			if(e.status === 404) {
-				this.errorDiv = 'Gateway is unreachable.'
-				console.log('Unreachable')
-			}
-		}
-		
+				if(e.status === 404) {
+					this.errorDiv = 'Gateway is unreachable.'
+					console.log('Unreachable')
+				}
+			})		
 	}
 
 	ngOnInit(): void {
-		this.sessionService.activeSession.subscribe(
-			data => {
+		this.sessionService.activeSession.subscribe((data:TheeyeCredential) => {
 				if(data.email && data.token) {
 					this.router.navigateByUrl("/main-screen");
 				}
