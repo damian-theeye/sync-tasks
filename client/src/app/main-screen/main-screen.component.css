@@ -1,6 +1,5 @@
 .processButtonTable {
     width:100%;
-
 }
 
 .title {
@@ -39,4 +38,13 @@
 
 :host ::ng-deep .mat-progress-spinner circle, .mat-spinner circle  {
     stroke: #3371AB!important;
-    }
+}
+
+#body {
+    padding-bottom:10px;   /* Height of the footer */
+    max-width: 100%;
+}
+
+table {
+    max-width:100%
+}

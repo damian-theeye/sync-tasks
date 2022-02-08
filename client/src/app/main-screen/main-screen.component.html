@@ -1,72 +1,74 @@
-<app-header></app-header>
-<div class="my-overlay" *ngIf="showOverlay">
-	<mat-spinner></mat-spinner>
-</div>
-
-<div style="margin:5% 10%">
-
-<mat-form-field appearance="fill">
-  <mat-label>Task</mat-label>
-  <mat-select [(ngModel)]="selectedTask" (selectionChange)="onSelectTask()" name="tasks" >
-    <mat-option *ngFor="let task of taskSelect" [value]="task.id">
-      {{task.name}}
-    </mat-option>
-  </mat-select>
-</mat-form-field>
-<br>
-<mat-form-field appearance="fill">
-  <mat-label>Input Arguments</mat-label>
-  <input matInput [(ngModel)]="inputArguments" placeholder="Arg1, Arg2, Arg3, ...">
-</mat-form-field>
-<br>
-
-<mat-button-toggle-group name="apiMode" aria-label="API MODE" [(ngModel)]="selectedMode">
-  <mat-button-toggle value="sync">API-SYNC</mat-button-toggle>
-  <mat-button-toggle value="supervisor">SUPERVISOR</mat-button-toggle>
-</mat-button-toggle-group>
-
-<br><br>
-
-<button mat-flat-button color="primary" style="background-color:#3371AB;border-radius: 0" (click)="sendReq()">Try it out!</button>
-
-
-<br>
-<br>
-<br>
-
-<p>Selected task: {{selectedTaskName}}</p>
-<p>Selected mode: {{selectedMode}}</p>
-<br>
-<div *ngIf="taskResult.length">
-<p>Input:</p>
-<pre>{{taskResultInput}}</pre>
-
-<p>Output:</p>
-<pre>{{taskResultOutput}}</pre>
-
-<button [disabled]="selectedMode === 'sync'" mat-flat-button color="primary" style="background-color:#3371AB;border-radius: 0" (click)="taskResultButton()">Refresh Task Result</button>
-<button mat-flat-button color="primary" style="background-color:#3371AB;border-radius: 0" (click)="showRaw = false; showPretty = true">Show Pretty Result</button>
-<button mat-flat-button color="primary" style="background-color:#3371AB;border-radius: 0" (click)="showRaw = true; showPretty = false">Show Raw Result</button>
-
-<div *ngIf="showPretty">
-<table class="table table-striped">
-  <thead>
-      <tr>
-        <th>Atribute</th>
-        <th>Value</th>
-      </tr>
-  </thead>
-  <tbody>
-    <tr *ngFor="let elem of taskResult">
-      <td>{{ elem.attr }}</td>
-      <td><pre>{{ elem.value}}</pre></td>
-    </tr>
-  </tbody>
-</table>
-</div>
-<div *ngIf="showRaw">
-<br>{{(taskResultRaw | json)}}
-</div>
-</div>
-</div>
-<app-footer></app-footer>
+  <app-header></app-header>
+  <div id="body">
+    <div class="my-overlay" *ngIf="showOverlay">
+      <mat-spinner></mat-spinner>
+    </div>
+    
+    <div style="margin:5% 10%">
+    
+    <mat-form-field appearance="fill">
+      <mat-label>Task</mat-label>
+      <mat-select [(ngModel)]="selectedTask" (selectionChange)="onSelectTask()" name="tasks" >
+        <mat-option *ngFor="let task of taskSelect" [value]="task.id">
+          {{task.name}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+    <br>
+    <mat-form-field appearance="fill">
+      <mat-label>Input Arguments</mat-label>
+      <input matInput [(ngModel)]="inputArguments" placeholder="Arg1, Arg2, Arg3, ...">
+    </mat-form-field>
+    <br>
+    
+    <mat-button-toggle-group name="apiMode" aria-label="API MODE" [(ngModel)]="selectedMode">
+      <mat-button-toggle value="sync">API-SYNC</mat-button-toggle>
+      <mat-button-toggle value="supervisor">SUPERVISOR</mat-button-toggle>
+    </mat-button-toggle-group>
+    
+    <br><br>
+    
+    <button mat-flat-button color="primary" style="background-color:#3371AB;border-radius: 0" (click)="sendReq()">Try it out!</button>
+    
+    
+    <br>
+    <br>
+    <br>
+    
+    <p>Selected task: {{selectedTaskName}}</p>
+    <p>Selected mode: {{selectedMode}}</p>
+    <br>
+    <div *ngIf="taskResult.length">
+    <p>Input:</p>
+    <pre>{{taskResultInput}}</pre>
+    
+    <p>Output:</p>
+    <pre>{{taskResultOutput}}</pre>
+    
+    <button [disabled]="selectedMode === 'sync'" mat-flat-button color="primary" style="background-color:#3371AB;border-radius: 0" (click)="taskResultButton()">Refresh Task Result</button>
+    <button mat-flat-button color="primary" style="background-color:#3371AB;border-radius: 0" (click)="showRaw = false; showPretty = true">Show Pretty Result</button>
+    <button mat-flat-button color="primary" style="background-color:#3371AB;border-radius: 0" (click)="showRaw = true; showPretty = false">Show Raw Result</button>
+    
+    <div *ngIf="showPretty">
+    <table class="table table-striped">
+      <thead>
+          <tr>
+            <th>Atribute</th>
+            <th>Value</th>
+          </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let elem of taskResult">
+          <td>{{ elem.attr }}</td>
+          <td><pre>{{ elem.value}}</pre></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <div *ngIf="showRaw">
+    <br>{{(taskResultRaw | json)}}
+    </div>
+    </div>
+    </div>
+  </div>
+  <app-footer></app-footer>

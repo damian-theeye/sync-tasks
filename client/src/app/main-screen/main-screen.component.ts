@@ -138,11 +138,22 @@ export class MainScreenComponent implements OnInit {
 		this.taskResultInput = JSON.stringify(this.inputArgumentsArray, undefined, 2)
 	}
 
+	prettifyValue = (raw:any):string => {
+		if(typeof(raw) === 'object') {
+			for(const key in raw) {
+				if(this.isJsonString(raw[key])) {
+					raw[key] = JSON.parse(raw[key])
+				}
+			}
+		}
+		return JSON.stringify(raw, undefined, 2)
+	}
+
 	prettifyResult = (raw:any):void => {
 		for(const attr of Object.keys(raw)) {
 			this.taskResult.push({
 				attr:attr,
-				value:JSON.stringify(raw[attr], undefined, 2)
+				value:this.prettifyValue(raw[attr])
 			})
 		}
 	}
