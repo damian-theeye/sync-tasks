@@ -12,6 +12,7 @@ import { HeaderComponent } from './header/header.component';
 import { FormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MaterialModule } from './material/material.module';
+import { FooterComponent } from './footer/footer.component';
 
 
 @NgModule({
@@ -19,7 +20,8 @@ import { MaterialModule } from './material/material.module';
     AppComponent,
     LoginScreenComponent,
     MainScreenComponent,
-    HeaderComponent
+    HeaderComponent,
+    FooterComponent
     ],
   imports: [
     BrowserModule,

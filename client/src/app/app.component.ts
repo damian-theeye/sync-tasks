@@ -1,12 +1,5 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
-import {
-  Router,
-  Event as RouterEvent,
-  NavigationStart,
-  NavigationEnd,
-  NavigationCancel,
-  NavigationError
-} from '@angular/router'
+import { Router } from '@angular/router'
 
 @Component({
   selector: 'app-root',

@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "vw-form": {
+    "sync-ui": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -77,10 +77,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "vw-form:build:production"
+              "browserTarget": "sync-ui:build:production"
             },
             "development": {
-              "browserTarget": "vw-form:build:development"
+              "browserTarget": "sync-ui:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -88,7 +88,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "vw-form:build"
+            "browserTarget": "sync-ui:build"
           }
         },
         "test": {
@@ -114,5 +114,5 @@
       }
     }
   },
-  "defaultProject": "vw-form"
+  "defaultProject": "sync-ui"
 }
